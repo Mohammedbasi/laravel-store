@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 
 class CategoryRequest extends FormRequest
 {
@@ -12,7 +13,11 @@ class CategoryRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        if ($this->route('category')) {
+            return Gate::allows('category.update');
+        }
+
+        return Gate::allows('category.create');
     }
 
     /**
@@ -29,7 +34,7 @@ class CategoryRequest extends FormRequest
     public function messages()
     {
         return [
-            'name.required'=>'name in update is required',
+            'name.required' => 'name in update is required',
             'unique' => 'this field (:attribute) is unique can not be repeated'
         ];
     }

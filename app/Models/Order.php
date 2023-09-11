@@ -27,6 +27,11 @@ class Order extends Model
         ]);
     }
 
+    public function delivery()
+    {
+        return $this->hasOne(Delivery::class);
+    }
+
     public function products()
     {
         return $this->belongsToMany(Product::class, 'order_items', 'order_id', 'product_id', 'id', 'id')
@@ -35,6 +40,11 @@ class Order extends Model
             ->withPivot([
                 'product_name', 'price', 'quantity', 'options',
             ]);
+    }
+
+    public function items()
+    {
+        return $this->hasMany(OrderItem::class, 'order_id');
     }
 
     public function addresses()

@@ -7,6 +7,7 @@ use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -18,6 +19,9 @@ class CategoriesController extends Controller
      */
     public function index()
     {
+        if (!Gate::allows('categories.view')) {
+            abort(403);
+        }
         $request = request();
 
         $categories = Category::with('parent')
@@ -43,6 +47,9 @@ class CategoriesController extends Controller
      */
     public function create()
     {
+        if (Gate::denies('categories.create')) {
+            abort(403);
+        }
         $parents = Category::all();
         $category = new Category();
         return view('dashboard.categories.create', compact('category', 'parents'));
@@ -53,6 +60,10 @@ class CategoriesController extends Controller
      */
     public function store(Request $request)
     {
+        if (Gate::denies('categories.create')) {
+            abort(403);
+        }
+
         $request->validate(Category::rules(), [
             'required' => 'This field (:attribute) is required',
             'name.unique' => 'The name is exist',
@@ -61,7 +72,7 @@ class CategoriesController extends Controller
         $request->merge([
             'slug' => Str::slug($request->post('name'))
         ]);
-        
+
         $data = $request->except('image');
         $data['image'] = $this->uploadImage($request);
 
@@ -75,6 +86,10 @@ class CategoriesController extends Controller
      */
     public function show(Category $category)
     {
+        if (!Gate::allows('categories.view')) {
+            abort(403);
+        }
+
         return view('dashboard.categories.show', [
             'category' => $category
         ]);
@@ -85,6 +100,7 @@ class CategoriesController extends Controller
      */
     public function edit(string $id)
     {
+        Gate::authorize('categories.update');
         try {
             $category = Category::findOrfail($id);
         } catch (Exception $e) {
@@ -134,6 +150,8 @@ class CategoriesController extends Controller
      */
     public function destroy(string $id)
     {
+        Gate::authorize('categories.delete');
+
         $category = Category::findOrfail($id);
         $category->delete();
 

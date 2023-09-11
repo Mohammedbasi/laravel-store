@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Front;
 
 use App\Events\OrderCreated;
+use App\Exceptions\InvalidOrderException;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -20,7 +21,7 @@ class CheckoutController extends Controller
     {
         Locale::setDefault('en');
         if ($cart->get()->count() == 0) {
-            return redirect()->route('home');
+            throw new InvalidOrderException('Cart is empty');
         }
         return view('front.checkout', [
             'cart' => $cart,
@@ -30,7 +31,13 @@ class CheckoutController extends Controller
 
     public function store(Request $request, CartRepository $cart)
     {
-        $request->validate([]);
+        $request->validate([
+            'addr.billing.first_name' => ['required', 'string', 'max:255'],
+            'addr.billing.last_name' => ['required', 'string', 'max:255'],
+            'addr.billing.email' => ['required', 'string', 'max:255'],
+            'addr.billing.phone_number' => ['required', 'string', 'max:255'],
+            'addr.billing.city' => ['required', 'string', 'max:255'],
+        ]);
 
         $items = $cart->get()->groupBy('product.store_id')->all();
         DB::beginTransaction();
@@ -57,16 +64,15 @@ class CheckoutController extends Controller
                     $order->addresses()->create($address);
                 }
             }
-            
+
             DB::commit();
 
             //event('order.created', $order);
             event(new OrderCreated($order));
-
         } catch (Throwable $e) {
             DB::rollBack();
             throw $e;
         }
-        return redirect()->route('home');
+        return redirect()->route('orders.payments.create',$order->id);
     }
 }
